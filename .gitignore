@@ -7,3 +7,7 @@ __pycache__/
 uv.lock
 *.log
 .DS_Store
+vertex_oauth.json
+*.pem
+*.key
+secrets/
