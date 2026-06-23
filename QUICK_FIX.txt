@@ -1,0 +1,47 @@
+FIX FOR "No module named 'dotenv'" error
+
+The problem: Python packages are not installed in your current Python environment.
+
+SOLUTION (copy-paste these lines one by one in PowerShell):
+
+cd $env:USERPROFILE\projects\hermes-voice-assistant
+
+# 1. Create virtual environment
+python -m venv .venv
+
+# 2. Activate it
+.\.venv\Scripts\Activate.ps1
+
+# 3. Install all required packages (this installs python-dotenv + livekit etc.)
+pip install -r requirements.txt
+
+# 4. Now run the trunk setup
+python setup_trunk.py
+
+After step 4 succeeds, it will print something like:
+Trunk ID: ST_xxxxxxxxxxxxxxxx
+
+Copy that ID and paste it into your .env file:
+OUTBOUND_TRUNK_ID=ST_xxxxxxxxxxxxxxxx
+
+Then you can make calls.
+
+---
+
+Alternative if you want to use 'uv' (faster, recommended for future):
+First install uv once:
+winget install --id=astral-sh.uv  -e --source winget
+
+Then you can just run:
+uv run python setup_trunk.py
+
+No need to activate venv every time.
+
+---
+
+After the trunk is created, you will also need:
+- GOOGLE_API_KEY in .env (for Gemini voice)
+- Hermes running with API server enabled
+
+Run this to test after setup:
+.\.venv\Scripts\python agent.py console
