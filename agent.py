@@ -547,31 +547,35 @@ async def entrypoint(ctx: agents.JobContext):
 
     try:
         # === Parse rich call metadata for intelligent, goal-directed behavior ===
-    phone_number = ""
-    call_brief = {}
-    try:
-        if ctx.job.metadata:
-            raw_meta = json.loads(ctx.job.metadata)
-            phone_number = raw_meta.get("phone_number", "") or raw_meta.get("to", "") or raw_meta.get("phone", "")
-            call_brief = {
-                "purpose": raw_meta.get("purpose", raw_meta.get("call_purpose", "")),
-                "target_person": raw_meta.get("target_person", raw_meta.get("name", "")),
-                "desired_outcome": raw_meta.get("desired_outcome", ""),
-                "key_questions": raw_meta.get("key_questions", []),
-                "tone": raw_meta.get("tone", "professional and friendly"),
-                "additional_context": raw_meta.get("additional_context", ""),
-                "language": raw_meta.get("language", "en"),
-                # Unique per-call context and guardrails/limitations (handled via Hermes)
-                "guardrails": raw_meta.get("guardrails", raw_meta.get("limitations", raw_meta.get("guard_rails", ""))),
-                "unique_context": raw_meta.get("unique_context", raw_meta.get("per_call_context", "")),
-                # Agentic planner hints
-                "initial_plan_hint": raw_meta.get("initial_plan_hint", "") or raw_meta.get("plan", ""),
-                "tasks": raw_meta.get("tasks", []),
-            }
-            # Clean empty values
-            call_brief = {k: v for k, v in call_brief.items() if v}
-    except Exception:
-        pass
+        phone_number = ""
+        call_brief = {}
+        try:
+            if ctx.job.metadata:
+                raw_meta = json.loads(ctx.job.metadata)
+                phone_number = raw_meta.get("phone_number", "") or raw_meta.get("to", "") or raw_meta.get("phone", "")
+                call_brief = {
+                    "purpose": raw_meta.get("purpose", raw_meta.get("call_purpose", "")),
+                    "target_person": raw_meta.get("target_person", raw_meta.get("name", "")),
+                    "desired_outcome": raw_meta.get("desired_outcome", ""),
+                    "key_questions": raw_meta.get("key_questions", []),
+                    "tone": raw_meta.get("tone", "professional and friendly"),
+                    "additional_context": raw_meta.get("additional_context", ""),
+                    "language": raw_meta.get("language", "en"),
+                    # Unique per-call context and guardrails/limitations (handled via Hermes)
+                    "guardrails": raw_meta.get("guardrails", raw_meta.get("limitations", raw_meta.get("guard_rails", ""))),
+                    "unique_context": raw_meta.get("unique_context", raw_meta.get("per_call_context", "")),
+                    # Agentic planner hints
+                    "initial_plan_hint": raw_meta.get("initial_plan_hint", "") or raw_meta.get("plan", ""),
+                    "tasks": raw_meta.get("tasks", []),
+                }
+                # Clean empty values
+                call_brief = {k: v for k, v in call_brief.items() if v}
+        except Exception:
+            pass
+    except Exception as e:
+        print(f"[Entry] Metadata parse error (auto handled): {e}")
+        phone_number = ""
+        call_brief = {}
 
     # === Inbound SIP phone number extraction (for real inbound calls) ===
     # When someone calls your Vobiz number, LiveKit SIP often provides the caller ID
@@ -772,16 +776,6 @@ async def entrypoint(ctx: agents.JobContext):
                 asyncio.create_task(_trigger_first_greeting())
 
     ctx.room.on("track_subscribed", on_track_subscribed)
-
-    except Exception as e:
-        print(f"[Entry] Unexpected error during call (auto handled - summary will be forced): {e}")
-        try:
-            if not assistant.call_summary_saved:
-                await _force_summary()
-        except Exception as inner:
-            print(f"[Entry] Fallback summary also failed: {inner}")
-        # Re-raise so LiveKit job system can handle restart/retry
-        raise
 
 
 if __name__ == "__main__":
